@@ -167,6 +167,10 @@ def save_solution_to_xml(solution: Solution, file_path: str):
         class_elem.set("weeks", sol_class.weeks)
         if sol_class.room:
             class_elem.set("room", sol_class.room)
+        if sol_class.students:
+            for student in sol_class.students:
+                student_elem = ET.SubElement(class_elem, "student")
+                student_elem.set("id", student.id)
 
     # Write the XML to a file
     tree = ET.ElementTree(solution_elem)

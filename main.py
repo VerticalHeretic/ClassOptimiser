@@ -1,7 +1,7 @@
 import random
 from typing import List
 from xml_operations import save_solution_to_xml, parse_xml
-from models import Problem, SolutionClass, Solution
+from models import Problem, SolutionClass, Solution, Student
 
 
 def initial_solution(problem: Problem) -> List[SolutionClass]:
@@ -16,13 +16,24 @@ def initial_solution(problem: Problem) -> List[SolutionClass]:
                     else:
                         room = None
 
+                    students = []
+
+                    print(
+                        f"Will try to find students for course {course.id} in {len(problem.students)} students"
+                    )
+                    for student in problem.students:
+                        for student_course in student.courses:
+                            if student_course.id == course.id:
+                                students.append(Student(id=student.id, courses=None))
+                    print(f"Found {len(students)} students")
+
                     solution_class = SolutionClass(
                         id=class_.id,
                         days=time.days,
                         start=time.start,
                         weeks=time.weeks,
                         room=room.id if room else None,
-                        students=None,
+                        students=students if len(students) > 0 else None,
                     )
                     solution_classes.append(solution_class)
     return solution_classes
@@ -30,7 +41,7 @@ def initial_solution(problem: Problem) -> List[SolutionClass]:
 
 def main():
     # Example usage
-    problem = parse_xml("data/pu-cs-fal07.xml")
+    problem = parse_xml("data/bet-sum18.xml")
     # You can now work with the structured data
     print(f"Number of rooms: {len(problem.rooms)}")
     print(f"Number of courses: {len(problem.courses)}")
@@ -42,7 +53,7 @@ def main():
         rutime=0,
         cores=1,
         technique="Simulated Annealing",
-        author="Łukasz Stachnik",
+        author="Lukasz Stachnik",
         institution="University of Economics in Katowice",
         country="Poland",
         classes=solution,
