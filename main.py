@@ -1,3 +1,4 @@
+import random
 from typing import Any, List, Optional
 from pydantic import BaseModel
 import xml.etree.ElementTree as ET
@@ -86,9 +87,9 @@ class Problem(BaseModel):
 class SolutionClass(BaseModel):
     id: str
     days: str
-    start: str
+    start: int
     weeks: str
-    room: str
+    room: Optional[str]
     students: Optional[List[Student]]
 
 
@@ -233,8 +234,27 @@ def parse_xml(file_path: str) -> Problem:
 
 
 def initial_solution(problem: Problem) -> List[SolutionClass]:
+    solution_classes = []
     for course in problem.courses:
-        print(course)
+        for config in course.configs:
+            for subpart in config.subparts:
+                for class_ in subpart.classes:
+                    time = random.choice(class_.times)
+                    if class_.room:
+                        room = random.choice(class_.rooms)
+                    else:
+                        room = None
+
+                    solution_class = SolutionClass(
+                        id=class_.id,
+                        days=time.days,
+                        start=time.start,
+                        weeks=time.weeks,
+                        room=room.id if room else None,
+                        students=None,
+                    )
+                    solution_classes.append(solution_class)
+    return solution_classes
 
 
 def main():
@@ -244,7 +264,8 @@ def main():
     print(f"Number of rooms: {len(problem.rooms)}")
     print(f"Number of courses: {len(problem.courses)}")
     print(f"Number of distributions: {len(problem.distributions)}")
-    initial_solution(problem)
+    solution = initial_solution(problem)
+    print(solution)
 
 
 if __name__ == "__main__":
