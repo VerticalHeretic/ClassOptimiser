@@ -257,6 +257,32 @@ def initial_solution(problem: Problem) -> List[SolutionClass]:
     return solution_classes
 
 
+def save_solution(solution: Solution, file_path: str):
+    # Create an XML element for the solution
+    solution_elem = ET.Element("solution")
+    solution_elem.set("name", solution.name)
+    solution_elem.set("rutime", str(solution.rutime))
+    solution_elem.set("cores", str(solution.cores))
+    solution_elem.set("technique", solution.technique)
+    solution_elem.set("author", solution.author)
+    solution_elem.set("institution", solution.institution)
+    solution_elem.set("country", solution.country)
+
+    # Add classes to the solution element
+    for sol_class in solution.classes:
+        class_elem = ET.SubElement(solution_elem, "class")
+        class_elem.set("id", sol_class.id)
+        class_elem.set("days", sol_class.days)
+        class_elem.set("start", str(sol_class.start))
+        class_elem.set("weeks", sol_class.weeks)
+        if sol_class.room:
+            class_elem.set("room", sol_class.room)
+
+    # Write the XML to a file
+    tree = ET.ElementTree(solution_elem)
+    tree.write(file_path)
+
+
 def main():
     # Example usage
     problem = parse_xml("data/bet-sum18.xml")
@@ -265,7 +291,19 @@ def main():
     print(f"Number of courses: {len(problem.courses)}")
     print(f"Number of distributions: {len(problem.distributions)}")
     solution = initial_solution(problem)
-    print(solution)
+
+    solution = Solution(
+        name=problem.name,
+        rutime=0,
+        cores=1,
+        technique="Simulated Annealing",
+        author="Łukasz Stachnik",
+        institution="University of Economics in Katowice",
+        country="Poland",
+        classes=solution,
+    )
+
+    save_solution(solution, f"solution_{problem.name}.xml")
 
 
 if __name__ == "__main__":
