@@ -55,3 +55,6 @@ coverage.xml
 # Logs and databases
 *.log
 *.sqlite
+
+# Solution files
+solution_*.xml
