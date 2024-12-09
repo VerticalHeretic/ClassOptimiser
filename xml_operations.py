@@ -110,9 +110,10 @@ def parse_students_xml(root: ET.Element | Any) -> List[Student]:
     students = []
     for student_elem in root.findall("students/student"):
         courses = [
-            Course(course.get("id"), None) for course in student_elem.findall("course")
+            Course(id=course.get("id"), configs=None)
+            for course in student_elem.findall("course")
         ]
-        students.append(Student(student_elem.get("id"), courses))
+        students.append(Student(id=student_elem.get("id"), courses=courses))
     return students
 
 

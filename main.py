@@ -30,7 +30,7 @@ def initial_solution(problem: Problem) -> List[SolutionClass]:
 
 def main():
     # Example usage
-    problem = parse_xml("data/bet-sum18.xml")
+    problem = parse_xml("data/pu-cs-fal07.xml")
     # You can now work with the structured data
     print(f"Number of rooms: {len(problem.rooms)}")
     print(f"Number of courses: {len(problem.courses)}")
