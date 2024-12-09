@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 from pydantic import BaseModel
 import xml.etree.ElementTree as ET
 
@@ -11,7 +11,20 @@ class Time(BaseModel):
     penalty: int
 
 
+class Unavailable(BaseModel):
+    days: str
+    start: int
+    length: int
+    weeks: str
+
+
 class Room(BaseModel):
+    id: str
+    capacity: int
+    unavailable: List[Unavailable]
+
+
+class PossibleRoom(BaseModel):
     id: str
     penalty: int
 
@@ -21,7 +34,7 @@ class Class(BaseModel):
     limit: Optional[int]
     parent: Optional[str]
     room: bool = True
-    rooms: List[Room]
+    rooms: List[PossibleRoom]
     times: List[Time]
 
 
@@ -64,6 +77,7 @@ class Problem(BaseModel):
     slotsPerDay: int  # One slot is 5 min
     numberOfWeeks: int  # Number of weeks in this problem (nrWeeks * nrDays * slotsPerDay = full optimization time)
     optimization_weights: OptimizationWeights
+    rooms: List[Room]
     courses: List[Course]
     distributions: List[Distribution]
     students: Optional[List[Student]]
@@ -89,18 +103,30 @@ class Solution(BaseModel):
     classes: List[SolutionClass]
 
 
-def parse_xml(file_path: str) -> Problem:
-    tree = ET.parse(file_path)
-    root = tree.getroot()
+def parse_rooms_xml(root: ET.Element | Any) -> List[Room]:
+    rooms = []
+    for room_elem in root.findall("rooms/room"):
+        unavailable = []
+        for unavailable_elem in room_elem.findall("unavailable"):
+            unavailable.append(
+                Unavailable(
+                    days=unavailable_elem.get("days"),
+                    start=int(unavailable_elem.get("start")),
+                    length=int(unavailable_elem.get("length")),
+                    weeks=unavailable_elem.get("weeks"),
+                )
+            )
+        rooms.append(
+            Room(
+                id=room_elem.get("id"),
+                capacity=int(room_elem.get("capacity")),
+                unavailable=unavailable,
+            )
+        )
+    return rooms
 
-    optimization_elem = root.find("optimization")
-    optimization_weights = OptimizationWeights(
-        time=int(optimization_elem.get("time")),
-        room=int(optimization_elem.get("room")),
-        distibution=int(optimization_elem.get("distribution")),
-        student=int(optimization_elem.get("student")),
-    )
 
+def parse_courses_xml(root: ET.Element | Any) -> List[Course]:
     courses = []
     for course_elem in root.findall("courses/course"):
         configs = []
@@ -110,8 +136,10 @@ def parse_xml(file_path: str) -> Problem:
                 classes = []
                 for class_elem in subpart_elem.findall("class"):
                     # Parse rooms
-                    rooms = [
-                        Room(id=room.get("id"), penalty=int(room.get("penalty", 0)))
+                    possible_rooms = [
+                        PossibleRoom(
+                            id=room.get("id"), penalty=int(room.get("penalty", 0))
+                        )
                         for room in class_elem.findall("room")
                     ]
 
@@ -135,7 +163,7 @@ def parse_xml(file_path: str) -> Problem:
                         else None,
                         parent=class_elem.get("parent"),
                         room=class_elem.get("room", "true").lower() != "false",
-                        rooms=rooms,
+                        rooms=possible_rooms,
                         times=times,
                     )
                     classes.append(class_obj)
@@ -148,8 +176,10 @@ def parse_xml(file_path: str) -> Problem:
 
         course = Course(id=course_elem.get("id"), configs=configs)
         courses.append(course)
+    return courses
 
-    # Parse distributions
+
+def parse_distributions_xml(root: ET.Element | Any) -> List[Distribution]:
     distributions = []
     for dist_elem in root.findall("distributions/distribution"):
         class_ids = [class_elem.get("id") for class_elem in dist_elem.findall("class")]
@@ -159,13 +189,35 @@ def parse_xml(file_path: str) -> Problem:
             class_ids=class_ids,
         )
         distributions.append(distribution)
+    return distributions
 
+
+def parse_students_xml(root: ET.Element | Any) -> List[Student]:
     students = []
     for student_elem in root.findall("students/student"):
-        courses = []
-        for course in student_elem.findall("course"):
-            courses.append(Course(course.get("id"), None))
+        courses = [
+            Course(course.get("id"), None) for course in student_elem.findall("course")
+        ]
         students.append(Student(student_elem.get("id"), courses))
+    return students
+
+
+def parse_xml(file_path: str) -> Problem:
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    optimization_elem = root.find("optimization")
+    optimization_weights = OptimizationWeights(
+        time=int(optimization_elem.get("time")),
+        room=int(optimization_elem.get("room")),
+        distibution=int(optimization_elem.get("distribution")),
+        student=int(optimization_elem.get("student")),
+    )
+
+    rooms = parse_rooms_xml(root)
+    courses = parse_courses_xml(root)
+    distributions = parse_distributions_xml(root)
+    students = parse_students_xml(root)
 
     return Problem(
         name=root.get("name"),
@@ -173,18 +225,26 @@ def parse_xml(file_path: str) -> Problem:
         slotsPerDay=root.get("slotsPerDay"),
         numberOfWeeks=root.get("nrWeeks"),
         optimization_weights=optimization_weights,
+        rooms=rooms,
         courses=courses,
         distributions=distributions,
         students=students,
     )
 
 
+def initial_solution(problem: Problem) -> List[SolutionClass]:
+    for course in problem.courses:
+        print(course)
+
+
 def main():
     # Example usage
     problem = parse_xml("data/bet-sum18.xml")
     # You can now work with the structured data
+    print(f"Number of rooms: {len(problem.rooms)}")
     print(f"Number of courses: {len(problem.courses)}")
     print(f"Number of distributions: {len(problem.distributions)}")
+    initial_solution(problem)
 
 
 if __name__ == "__main__":
