@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, List
 from models import (
     Room,
+    Travel,
     Unavailable,
     PossibleRoom,
     Class,
@@ -34,6 +35,13 @@ def parse_rooms_xml(root: ET.Element | Any) -> List[Room]:
             Room(
                 id=room_elem.get("id"),
                 capacity=int(room_elem.get("capacity")),
+                travels=[
+                    Travel(
+                        room=travel.get("room"),
+                        value=int(travel.get("value")),
+                    )
+                    for travel in room_elem.findall("travel")
+                ],
                 unavailable=unavailable,
             )
         )
@@ -166,7 +174,7 @@ def save_solution_to_xml(solution: Solution, file_path: str):
         class_elem.set("start", str(sol_class.start))
         class_elem.set("weeks", sol_class.weeks)
         if sol_class.room:
-            class_elem.set("room", sol_class.room)
+            class_elem.set("room", sol_class.room.id)
         if sol_class.students:
             for student in sol_class.students:
                 student_elem = ET.SubElement(class_elem, "student")

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
 class Time(BaseModel):
     days: str
     start: int
@@ -16,9 +17,15 @@ class Unavailable(BaseModel):
     weeks: str
 
 
+class Travel(BaseModel):
+    room: str
+    value: int
+
+
 class Room(BaseModel):
     id: str
     capacity: int
+    travels: List[Travel]
     unavailable: List[Unavailable]
 
 
@@ -86,7 +93,7 @@ class SolutionClass(BaseModel):
     days: str
     start: int
     weeks: str
-    room: Optional[str]
+    room: Optional[Room]
     students: Optional[List[Student]]
 
 
